@@ -1,0 +1,15 @@
+{
+  "name": "@sms/types",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'types: lint ok'",
+    "test": "echo 'types: no tests'",
+    "build": "echo 'types: no build needed (source-only package)'"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

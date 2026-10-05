@@ -1,0 +1,8 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm 11 блокирует postinstall-скрипты зависимостей.
+# esbuild (движок Vite) требует postinstall для установки бинарника.
+allowBuilds:
+  esbuild: true

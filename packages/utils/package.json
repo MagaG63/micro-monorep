@@ -1,0 +1,16 @@
+{
+  "name": "@sms/utils",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "echo 'utils: lint ok'",
+    "test": "vitest run",
+    "build": "echo 'utils: no build needed'"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

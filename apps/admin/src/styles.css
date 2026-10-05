@@ -1,0 +1,67 @@
+.admin-page {
+  padding: 24px 0;
+}
+
+.admin-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.admin-page__header h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.admin-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.admin-form {
+  max-width: 500px;
+}
+
+.admin-form__field {
+  margin-bottom: 16px;
+}
+
+.admin-form__field label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: #374151;
+}
+
+.admin-form__field input,
+.admin-form__field textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.2s;
+}
+
+.admin-form__field input:focus,
+.admin-form__field textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.admin-form__field textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.admin-form__success {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #065f46;
+  padding: 24px;
+}

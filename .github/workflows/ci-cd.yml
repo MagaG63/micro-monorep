@@ -1,0 +1,148 @@
+# CI/CD пайплайн монорепозитория
+#
+# 1. quality — линт и тесты на каждый push/PR
+# 2. build   — сборка всех приложений и объединение в один артефакт _site
+# 3. deploy  — публикация артефакта на GitHub Pages (только push в main)
+#
+# Структура сайта на GitHub Pages:
+#   /                     -> shell (хост-приложение)
+#   /admin/               -> remoteEntry.js микрофронтенда admin
+#   /dashboard/           -> remoteEntry.js микрофронтенда dashboard
+#   /profile/             -> remoteEntry.js микрофронтенда profile
+#   /404.html             -> копия index.html shell для SPA-роутинга
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  # ─── 1. Линт и тесты ────────────────────────────────────────────────────────
+  quality:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.18.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+  # ─── 2. Сборка всех приложений в единый артефакт ────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.18.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Shell — хост. base = /<repo>/ и URL-ы remotes указывают на GitHub Pages
+      - name: Build shell (host)
+        run: pnpm --filter shell build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_REMOTE_BASE: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
+      # Каждый remote собирается со своим base = /<repo>/<app>/
+      - name: Build admin (remote)
+        run: pnpm --filter admin build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/admin/
+
+      - name: Build dashboard (remote)
+        run: pnpm --filter dashboard build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/dashboard/
+
+      - name: Build profile (remote)
+        run: pnpm --filter profile build
+        env:
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/profile/
+
+      # Объединяем все dist в один сайт.
+      # От remotes копируем ТОЛЬКО assets/ (remoteEntry.js + чанки), без их index.html:
+      # тогда прямой заход на /<repo>/admin/ отдаёт 404 -> 404.html (shell),
+      # и shell сам рендерит нужный микрофронтенд. Единая точка входа.
+      - name: Assemble site
+        run: |
+          mkdir -p _site/admin _site/dashboard _site/profile
+          cp -r apps/shell/dist/. _site/
+          cp -r apps/admin/dist/assets _site/admin/assets
+          cp -r apps/dashboard/dist/assets _site/dashboard/assets
+          cp -r apps/profile/dist/assets _site/profile/assets
+          # SPA-fallback: GitHub Pages отдаёт 404.html для неизвестных путей
+          cp _site/index.html _site/404.html
+          echo "--- Site structure ---"
+          find _site -maxdepth 4 \( -name "*.html" -o -name "remoteEntry.js" \) | sort
+
+      - name: Setup Pages
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  # ─── 3. Деплой на GitHub Pages ──────────────────────────────────────────────
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
