@@ -123,13 +123,15 @@ jobs:
           echo "--- Site structure ---"
           find _site -maxdepth 4 \( -name "*.html" -o -name "remoteEntry.js" \) | sort
 
+      # ВАЖНО: этот шаг НЕ может включить Pages автоматически.
+      # Создание Pages-сайта — административная операция репозитория,
+      # а GITHUB_TOKEN по дизайну не имеет админ-прав (никакие permissions
+      # этого не меняют), поэтому enablement: true всегда падает с
+      # "Resource not accessible by integration".
+      # Pages включается один раз вручную: Settings → Pages → Source: GitHub Actions.
       - name: Setup Pages
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/configure-pages@v5
-        with:
-          # Автоматически включить GitHub Pages (Source: GitHub Actions),
-          # если он ещё не включён в настройках репозитория
-          enablement: true
 
       - name: Upload artifact
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'

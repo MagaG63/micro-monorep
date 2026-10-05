@@ -14,16 +14,16 @@
 
 ## Стек
 
-| Технология | Роль |
-|---|---|
-| **React 18** | UI |
-| **React Router 6** | Маршрутизация (в shell и внутри микрофронтендов) |
-| **Vite 5** | Сборка каждого приложения |
-| **@originjs/vite-plugin-federation** | Module Federation для Vite |
-| **pnpm workspaces** | Связывание пакетов монорепозитория |
-| **Turborepo** | Оркестрация задач, кэш, граф зависимостей |
-| **Vitest + Testing Library** | Тесты |
-| **GitHub Actions** | CI/CD → GitHub Pages |
+| Технология                           | Роль                                             |
+| ------------------------------------ | ------------------------------------------------ |
+| **React 18**                         | UI                                               |
+| **React Router 6**                   | Маршрутизация (в shell и внутри микрофронтендов) |
+| **Vite 5**                           | Сборка каждого приложения                        |
+| **@originjs/vite-plugin-federation** | Module Federation для Vite                       |
+| **pnpm workspaces**                  | Связывание пакетов монорепозитория               |
+| **Turborepo**                        | Оркестрация задач, кэш, граф зависимостей        |
+| **Vitest + Testing Library**         | Тесты                                            |
+| **GitHub Actions**                   | CI/CD → GitHub Pages                             |
 
 ## Структура
 
@@ -102,20 +102,21 @@ const AdminApp = lazy(() => import('admin/App'))
 
 ```ts
 federation({
-  name: 'admin',
-  filename: 'remoteEntry.js',
-  exposes: { './App': './src/App.tsx' },
+  name: "admin",
+  filename: "remoteEntry.js",
+  exposes: { "./App": "./src/App.tsx" },
   shared: {
     react: { singleton: true },
-    'react-dom': { singleton: true },
-    'react-router-dom': { singleton: true },
+    "react-dom": { singleton: true },
+    "react-router-dom": { singleton: true },
   },
-})
+});
 ```
 
 `shared + singleton` гарантирует, что React во всех модулях — **один и тот же экземпляр** (иначе хуки падают), и загружается один раз.
 
 > ⚠️ Важные нюансы, проверенные на практике:
+>
 > - URL remote в конфиге хоста указывается **без** webpack-префикса `name@` — плагин originjs принимает голый URL.
 > - У экспортируемого компонента **обязателен default export** — `React.lazy` берёт именно `.default`.
 > - В dev-режиме Vite хост работает, а remotes — нет: плагин отдаёт `remoteEntry.js` только из собранного бандла (см. «Локальная разработка»).
@@ -150,14 +151,14 @@ pnpm dev:shell     # только shell (http://localhost:3000)
 
 ## Команды
 
-| Команда | Что делает |
-|---|---|
-| `pnpm dev` | Все приложения параллельно |
-| `pnpm dev:shell` / `dev:admin` / `dev:dashboard` / `dev:profile` | Одно приложение |
-| `pnpm build` | Сборка всех пакетов и приложений (Turbo) |
-| `pnpm build:admin` | Сборка одного приложения |
-| `pnpm test` | Все тесты (Vitest через Turbo) |
-| `pnpm lint` | Линт всех пакетов |
+| Команда                                                          | Что делает                               |
+| ---------------------------------------------------------------- | ---------------------------------------- |
+| `pnpm dev`                                                       | Все приложения параллельно               |
+| `pnpm dev:shell` / `dev:admin` / `dev:dashboard` / `dev:profile` | Одно приложение                          |
+| `pnpm build`                                                     | Сборка всех пакетов и приложений (Turbo) |
+| `pnpm build:admin`                                               | Сборка одного приложения                 |
+| `pnpm test`                                                      | Все тесты (Vitest через Turbo)           |
+| `pnpm lint`                                                      | Линт всех пакетов                        |
 
 ## Тесты
 
@@ -194,15 +195,25 @@ _site/
 
 Почему у remotes копируются только `assets/`, а не весь `dist`: тогда прямой заход на `/<repo>/admin/` попадает в `404.html` → загружается shell → его роутер рендерит нужный микрофронтенд. Единая точка входа и корректный refresh на любом маршруте.
 
-### Настройка GitHub Pages (один раз)
+### Настройка GitHub Pages (один раз, вручную — 30 секунд)
 
 1. Запушьте репозиторий в GitHub (ветка `main`).
-2. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. Откройте **Settings → Pages → Build and deployment → Source** и выберите **GitHub Actions**.
 3. Сделайте push в `main` — пайплайн соберёт и задеплоит сайт.
 4. URL появится в шаге deploy и в **Settings → Pages**:
    `https://<owner>.github.io/<repo>/`
 
 Больше ничего настраивать не нужно: workflow сам вычисляет имя репозитория и владельца.
+
+> ⚠️ **Почему этот шаг нельзя автоматизировать?** Создание Pages-сайта — административная
+> операция репозитория, а автоматический `GITHUB_TOKEN` по дизайну не может администрировать
+> репозиторий (никакие `permissions:` в workflow этого не меняют). Поэтому `enablement: true`
+> в `configure-pages` всегда падает с «Resource not accessible by integration». Токен нужен
+> только для этого одного действия — после включения всё работает само.
+
+> ⚠️ **Приватный репозиторий на бесплатном аккаунте не может отдавать GitHub Pages вообще.**
+> Нужен публичный репозиторий или платный план (Pro/Team/Enterprise). Ошибка при этом не
+> говорит о причине напрямую.
 
 ## Частые вопросы
 
@@ -217,6 +228,9 @@ Vite компилирует их из исходников (main-поле ука
 
 **Почему `pnpm-workspace.yaml` содержит `allowBuilds: esbuild: true`?**
 pnpm 11 по умолчанию блокирует postinstall-скрипты зависимостей. esbuild (движок Vite) ставит бинарник через postinstall — ему нужно разрешение.
+
+**Пайплайн падает на шаге Setup Pages с «Resource not accessible by integration».**
+GitHub Pages не включён в репозитории. Включите вручную: **Settings → Pages → Source: GitHub Actions**. Автоматически (`enablement: true`) это невозможно — создание Pages-сайта недоступно `GITHUB_TOKEN`. Если репозиторий приватный — на бесплатном плане Pages для него не работает вовсе (нужен публичный репозиторий или платный план).
 
 **Windows + Git Bash: пути в env-переменных.**
 Git Bash преобразует `/repo/` в `C:\Program Files\Git\repo\`. Если собираете вручную с `VITE_BASE_PATH`, используйте `MSYS_NO_PATHCONV=1`. В CI (Ubuntu) этой проблемы нет.
